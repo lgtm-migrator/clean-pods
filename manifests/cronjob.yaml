@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cleanup-gitlab
+  namespace: gitlab
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 200
+  jobTemplate:
+    metadata:
+      name: cleanup-gitlab
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - image: azman0101/cleanpods:v2
+            env:
+            - name: POD_STATUS
+              value: Running
+            - name: MAX_HOURS
+              value: "1"
+            - name: NAMESPACE
+              value: "gitlab"
+            - name: STARTS_WITH
+              value: "running-"
+            securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                privileged: false
+                capabilities:
+                    drop:
+                        - ALL
+            imagePullPolicy: Always
+            name: cleanup-gitlab
+            resources:
+              limits:
+                cpu: 200m
+                memory: 200Mi
+              requests:
+                cpu: 200m
+                memory: 200Mi
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: OnFailure
+          schedulerName: default-scheduler
+          serviceAccountName: pod-cleanup
+          securityContext: {}
+          terminationGracePeriodSeconds: 10
+  schedule: 0 * * * *
+  successfulJobsHistoryLimit: 3
+  suspend: false
